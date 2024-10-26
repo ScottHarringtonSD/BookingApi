@@ -8,33 +8,63 @@ const { Console } = require("node:console");
 const getAllBookings = asyncHandler(async (req, res) => {
   const queryString = require("node:querystring");
   const q = queryString.parse();
-  var search = req.query.search;
+  var searchName = req.query.searchName;
+  var searchDate = req.query.searchDate;
 
-  if (search) {
-    var re = new RegExp(search, "gi");
+  if (searchName || searchDate) {
+    var re = new RegExp(searchName, "gi");
+
+
+    if(searchName == ""){
+      const bookings = await Booking.find({
+        $and: [
+          {
+            date: searchDate
+          },
+        ],
+      })
+        .lean()
+        .exec();
+  
+      return res.json(bookings);
+    }
+    else if(searchDate == ""){
+      const bookings = await Booking.find({
+        $and: [
+          {
+            name: { $regex: re },
+          },
+        ],
+      })
+        .lean()
+        .exec();
+  
+      return res.json(bookings);
+    }
+    else{
     const bookings = await Booking.find({
-      $or: [
+      $and: [
         {
           name: { $regex: re },
         },
         {
-          room: { $regex: re },
-        },
+          date: searchDate
+        }
       ],
     })
       .lean()
       .exec();
 
-    return res.json(bookings);
+    return res.json(bookings);}
   }
 
-  if (search === "") {
+  if (searchName === "" && searchDate === "") {
     return res.json(new Array());
   }
 
   const bookings = await Booking.find().lean().exec();
   if (!bookings?.length)
-    return res.status(400).json({ message: "No booking found" });
+    return res.status(404).json({ message: "No booking found" });
 
   res.json(bookings);
 });
@@ -73,7 +103,9 @@ const createNewBooking = asyncHandler(async (req, res) => {
     room,
   });
 
-  if (booking) return res.status(201).json({ message: "New booking created" });
+
+
+  if (booking) return res.status(201).json({ message: "New booking created", id: booking._id });
 
   res.status(400).json({ message: "Invalid data received" });
 });
@@ -109,9 +141,36 @@ const getBooking = asyncHandler(async (req, res) => {
   return res.json(booking);
 });
 
+
+// Gets the all the bookings in a gieven month
+// route get bookings/monthly/year/month
+const getMonthlyBooking = asyncHandler(async (req, res) => {
+  const { month } = req.params;
+  const { year } = req.params;
+
+
+  var monthStart = new Date(year, month-1, 1);
+  var nextMonth = new Date(year, monthStart.getMonth() + 1, 1);
+
+
+
+  const bookings = await Booking.find({
+    date: {
+        $gt: monthStart.toString(),
+        $lt: nextMonth.toString()
+    }
+  }).lean().exec();
+  
+
+  
+
+  res.json(bookings);
+});
+
 module.exports = {
   getAllBookings,
   createNewBooking,
   deleteBooking,
   getBooking,
+  getMonthlyBooking
 };
