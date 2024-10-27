@@ -113,11 +113,11 @@ const createNewBooking = asyncHandler(async (req, res) => {
 // @desc Delete booking
 // @route Delete /bookings
 const deleteBooking = asyncHandler(async (req, res) => {
-  const { _id } = req.body;
+  const { id } = req.params;
 
-  if (!_id) return res.status(400).json({ message: "Booking id required" });
+  if (!id) return res.status(400).json({ message: "Booking id required" });
 
-  const booking = await Booking.findById(_id).exec();
+  const booking = await Booking.findById(id).exec();
   if (!booking)
     return res.status(400).json({ message: "Booking id not found" });
 
