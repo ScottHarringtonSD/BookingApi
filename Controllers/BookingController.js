@@ -113,6 +113,28 @@ const createNewBooking = asyncHandler(async (req, res) => {
 // @desc Delete booking
 // @route Delete /bookings
 const deleteBooking = asyncHandler(async (req, res) => {
+  const jwt = require("njwt");
+  let token = "";
+  var tokenCheck = false;
+
+  for (let i = 0; i < req.rawHeaders.length; i++) {
+    if (req.rawHeaders[i] === "Auth") {
+      quotesToken = req.rawHeaders[i + 1];
+      token = quotesToken.replace(/^["'](.+(?=["']$))["']$/, "$1");
+    }
+  }
+  await jwt.verify(token, "booking-token-secret", (err, verifiedJwt) => {
+    if (err) {
+      console.log("failed at token check");
+    } else {
+      tokenCheck = true;
+    }
+  });
+
+  if (!tokenCheck) {
+    return res.status(401).json({ message: "Token authentication failed" });
+  }
+
   const { id } = req.params;
 
   if (!id) return res.status(400).json({ message: "Booking id required" });
